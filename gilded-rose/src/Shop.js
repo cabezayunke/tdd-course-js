@@ -1,57 +1,84 @@
+const AGED_BRIE = 'Aged Brie';
+const BACKSTAGE_PASSES = 'Backstage passes to a TAFKAL80ETC concert';
+const SULFURAS = 'Sulfuras, Hand of Ragnaros';
+const CONJURED = 'Conjured';
+
 export default class Shop {
-  constructor(someItems) {
-    this.items = someItems;
-  }
+    constructor(someItems) {
+        this.items = someItems;
+    }
 
-  updateQuality() {
-    for (var i = 0; i < this.items.length; i++) {
-        if (this.items[i].name != 'Aged Brie' && this.items[i].name != 'Backstage passes to a TAFKAL80ETC concert') {
-          if (this.items[i].quality > 0) {
-            if (this.items[i].name != 'Sulfuras, Hand of Ragnaros') {
-              this.items[i].quality = this.items[i].quality - 1;
-            }
-          }
+    updateInventory() {
+        for (const item of this.items) {
+            this.updateItem(item);
+        }
+
+        return this.items;
+    }
+
+    updateItem(item) {
+        if (item.name === SULFURAS) {
+            return;
+        }
+
+        if (item.name === AGED_BRIE) {
+            this.updateAgedBrie(item);
+        } else if (item.name === BACKSTAGE_PASSES) {
+            this.updateBackstagePasses(item);
+        } else if (item.name === CONJURED) {
+            this.updateConjured(item);
         } else {
-          if (this.items[i].quality < 50) {
-            this.items[i].quality = this.items[i].quality + 1;
-            if (this.items[i].name == 'Backstage passes to a TAFKAL80ETC concert') {
-              if (this.items[i].sellIn < 11) {
-                if (this.items[i].quality < 50) {
-                  this.items[i].quality = this.items[i].quality + 1;
-                }
-              }
-              if (this.items[i].sellIn < 6) {
-                if (this.items[i].quality < 50) {
-                  this.items[i].quality = this.items[i].quality + 1;
-                }
-              }
-            }
-          }
+            this.updateGenericItem(item);
         }
-        if (this.items[i].name != 'Sulfuras, Hand of Ragnaros') {
-          this.items[i].sellIn = this.items[i].sellIn - 1;
-        }
-        if (this.items[i].sellIn < 0) {
-          if (this.items[i].name != 'Aged Brie') {
-            if (this.items[i].name != 'Backstage passes to a TAFKAL80ETC concert') {
-              if (this.items[i].quality > 0) {
-                if (this.items[i].name != 'Sulfuras, Hand of Ragnaros') {
-                  this.items[i].quality = this.items[i].quality - 1;
-                }
-              }
-            } else {
-              this.items[i].quality = this.items[i].quality - this.items[i].quality;
-            }
-          } else {
-            if (this.items[i].quality < 50) {
-              this.items[i].quality = this.items[i].quality + 1;
-            }
-          }
-        }
-      }
+    }
 
-      return this.items;
-  }
+    updateGenericItem(item) {
+        item.decreaseQuality();
 
+        item.decreaseSellIn();
+
+        if (item.sellIn < 0) {
+            item.decreaseQuality();
+        }
+    }
+
+    updateAgedBrie(item) {
+        item.decreaseSellIn();
+
+        item.increaseQuality();
+
+        if (item.sellIn < 0) {
+            item.increaseQuality();
+        }
+    }
+
+    updateBackstagePasses(item) {
+        item.increaseQuality();
+
+        if (item.sellIn < 11) {
+            item.increaseQuality();
+        }
+
+        if (item.sellIn < 6) {
+            item.increaseQuality();
+        }
+
+        item.decreaseSellIn();
+
+        if (item.sellIn < 0) {
+            item.quality = 0;
+        }
+    }
+
+    updateConjured(item) {
+        item.decreaseQuality();
+        item.decreaseQuality();
+
+        item.decreaseSellIn();
+
+        if (item.sellIn < 0) {
+            item.decreaseQuality();
+            item.decreaseQuality();
+        }
+    }
 }
-
