@@ -1,27 +1,27 @@
-import Sensor from "./Sensor";
+import PressureSensorSafetyChecker from "./safetyChecks/PressureSensorSafetyChecker";
 
 var alarmOn = Symbol();
 
 export default class Alarm {
-  constructor() {
-    this.lowPressureThreshold = 17;
-    this.highPressureThreshold = 21;
-    this.sensor = new Sensor();
+  constructor(sensor, alarmNotifier, safetyChecker) {
+    this.sensor = sensor;
+    this.alarmNotifier = alarmNotifier;
+    this.safetyChecker = safetyChecker;
     this[alarmOn] = false;
   }
 
   check() {
-    const psiPressureValue = this.sensor.popNextPressurePsiValue();
+    const sensorValue = this.sensor.getNextValue();
 
-    if (psiPressureValue < this.lowPressureThreshold || this.highPressureThreshold < psiPressureValue) {
+    if (!this.safetyChecker.isValueSafe(sensorValue)) {
       if(!this[alarmOn]) {
         this[alarmOn] = true;
-        console.log("Alarm activated!");
+        this.alarmNotifier.notifyAlarmActivated();
       }
     } else {
       if(this[alarmOn]) {
         this[alarmOn] = false;
-        console.log("Alarm deactivated!");
+        this.alarmNotifier.notifyAlarmDeactivated();
       }
     }
   }
