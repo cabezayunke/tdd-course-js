@@ -5,8 +5,8 @@ import SensorStub from "./SensorStub";
 
 const LOW_PRESSURE_THRESHOLD = 17;
 const HIGH_PRESSURE_THRESHOLD = 21;
-const BELOW_LOW_PRESSURE_THRESHOLD = 16;
-const ABOVE_HIGH_PRESSURE_THRESHOLD = 22;
+const UNSAFE_LOW_PRESSURE_THRESHOLD = 16;
+const UNSAFE_HIGH_PRESSURE_THRESHOLD = 22;
 
 describe('Alarm', () => {
 
@@ -14,43 +14,37 @@ describe('Alarm', () => {
     let notifierSpy;
     let sensorStub;
     let alarm;
+    let sensorSafetyCheckerStub;
     
     const activatePressureAlarm = () => {
-      sensorStub.mockReturnValue(BELOW_LOW_PRESSURE_THRESHOLD);
+      sensorStub.getNextValue.mockReturnValue(UNSAFE_LOW_PRESSURE_THRESHOLD);
+      sensorSafetyCheckerStub.isValueSafe.mockReturnValue(false);
       alarm.check();
     }
   
     const deactivatePressureAlarm = () => {
-      sensorStub.mockReturnValue(LOW_PRESSURE_THRESHOLD);
+      sensorStub.getNextValue.mockReturnValue(LOW_PRESSURE_THRESHOLD);
+      sensorSafetyCheckerStub.isValueSafe.mockReturnValue(true);
       alarm.check();
     }
 
     beforeEach(() => {
       notifierSpy = new AlarmNotifierSpy();
-      sensorStub = new SensorStub(BELOW_LOW_PRESSURE_THRESHOLD);
+      sensorStub = {getNextValue: jest.fn()}
+      sensorSafetyCheckerStub = {isValueSafe: jest.fn()}
       alarm = new Alarm(
         sensorStub,
         notifierSpy,
-        new PressureSensorSafetyChecker()
+        sensorSafetyCheckerStub
       );
     })
     describe('activates alarm', () => {
+   
+      test("should activate alarm when threshold is unsafe", () => {
+        // arrange
+        sensorStub.getNextValue.mockReturnValue(UNSAFE_HIGH_PRESSURE_THRESHOLD);
+        sensorSafetyCheckerStub.isValueSafe.mockReturnValue(false);
 
-      test("should activate alarm when less than lower threshold", () => {
-        // arrange
-        sensorStub.mockReturnValue(BELOW_LOW_PRESSURE_THRESHOLD);
-    
-        // act
-        alarm.check();
-    
-        // assert
-        expect(notifierSpy.activatedCalls).toEqual(1);
-      });
-    
-      test("should activate alarm when greater than upper threshold", () => {
-        // arrange
-        sensorStub.mockReturnValue(ABOVE_HIGH_PRESSURE_THRESHOLD);
-    
         // act
         alarm.check();
     
@@ -64,8 +58,9 @@ describe('Alarm', () => {
       test("should deactivate alarm for lower threshold limit", () => {
         // arrange
         activatePressureAlarm();
-        sensorStub.mockReturnValue(LOW_PRESSURE_THRESHOLD)
-    
+        sensorStub.getNextValue.mockReturnValue(LOW_PRESSURE_THRESHOLD)
+        sensorSafetyCheckerStub.isValueSafe.mockReturnValue(true);
+
         // act
         alarm.check();
     
@@ -76,8 +71,9 @@ describe('Alarm', () => {
       test("should deactivate alarm for upper threshold", () => {
         // arrange
         activatePressureAlarm();
-        sensorStub.mockReturnValue(HIGH_PRESSURE_THRESHOLD);
-    
+        sensorStub.getNextValue.mockReturnValue(HIGH_PRESSURE_THRESHOLD);
+        sensorSafetyCheckerStub.isValueSafe.mockReturnValue(true);
+
         // act
         alarm.check();
     
@@ -89,7 +85,9 @@ describe('Alarm', () => {
         // arrange
         activatePressureAlarm();
         expect(notifierSpy.activatedCalls).toEqual(1)
-        sensorStub.mockReturnValue(HIGH_PRESSURE_THRESHOLD);
+        sensorStub.getNextValue.mockReturnValue(HIGH_PRESSURE_THRESHOLD);
+        sensorSafetyCheckerStub.isValueSafe.mockReturnValue(true);
+
         alarm.check();
         expect(notifierSpy.deactivatedCalls).toEqual(1);
 
@@ -108,7 +106,8 @@ describe('Alarm', () => {
     test('should not activate alarm if already activated', () => {
       // arrange
       activatePressureAlarm();
-      sensorStub.mockReturnValue(ABOVE_HIGH_PRESSURE_THRESHOLD);
+      sensorStub.getNextValue.mockReturnValue(UNSAFE_HIGH_PRESSURE_THRESHOLD);
+      sensorSafetyCheckerStub.isValueSafe.mockReturnValue(false);
       notifierSpy.reset();
   
       // act
@@ -121,7 +120,9 @@ describe('Alarm', () => {
     test('should not deactivate alarm if already deactivated', () => {
       // arrange
       deactivatePressureAlarm();
-      sensorStub.mockReturnValue(LOW_PRESSURE_THRESHOLD);
+      sensorStub.getNextValue.mockReturnValue(LOW_PRESSURE_THRESHOLD);
+      sensorSafetyCheckerStub.isValueSafe.mockReturnValue(true);
+
       notifierSpy.reset();
   
       // act
